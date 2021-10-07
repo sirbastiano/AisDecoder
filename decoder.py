@@ -5,34 +5,35 @@ import pynmea2
 class NMEA_decoder:
     def __init__(self, NMEA_log_path: str) -> None:
         self.file = NMEA_log_path
+
+        with open (self.file, "r", encoding="utf-8") as myfile:
+            tmp = myfile.read().splitlines()
+            self.data = [line for line in tmp if line]
+
+    def show_data(self):
+        return self.data                 
+    # def clock(self, line, idx: int):
         
-                 
-    def clock(self, line, idx: int):
-        with open (self.file, "r") as myfile:
-            data = myfile.read().splitlines()
-        
-        if data[idx+2][0] != '$':        # MULTI-LINE
-            try:
-                msg = pynmea2.parse(line, data[idx+2])
-                time = msg.timestamp.isoformat()
-                return time
-            except pynmea2.ParseError as e:
-                print(e)
-        else:
-            try:
-                msg = pynmea2.parse(line)
-                time = msg.timestamp.isoformat()
-                return time
-            except pynmea2.ParseError as e:
-                print(e)
+    #     if self.data[idx+2][0] != '$':        # MULTI-LINE
+    #         try:
+    #             msg = pynmea2.parse(line, data[idx+2])
+    #             time = msg.timestamp.isoformat()
+    #             return time
+    #         except pynmea2.ParseError as e:
+    #             print(e)
+    #     else:
+    #         try:
+    #             msg = pynmea2.parse(line)
+    #             time = msg.timestamp.isoformat()
+    #             return time
+    #         except pynmea2.ParseError as e:
+    #             print(e)
 
     def decode(self, line: str, idx: int):
-        with open (self.file, "r") as myfile:
-            data = myfile.read().splitlines()
 
-        if data[idx+2][0] == '!':        # MULTI-LINE
+        if self.data[idx+1][0] == '!':        # MULTI-LINE
             try:
-                msg = decode_msg(line, data[idx+2])
+                msg = decode_msg(line, self.data[idx+1])
                 return msg
             except:
                 pass
@@ -46,13 +47,12 @@ class NMEA_decoder:
     
     def to_df(self):
         DataFrame = pd.DataFrame()
-        with open (self.file, "r", encoding="utf-8") as myfile:
-            data = myfile.read().splitlines()
+        
 
-        def get_clock(idx, data):
+        def get_clock(idx):
             for i in range(30):
                 try:
-                    line = data[idx+i]
+                    line = self.data[idx+i]
                     msg = pynmea2.parse(line)
                     time = msg.timestamp.isoformat()
                     if isinstance(time, str):
@@ -64,15 +64,14 @@ class NMEA_decoder:
             
 
 
-        for idx, line in enumerate(data):
+        for idx, line in enumerate(self.data):
             try:
-               if line != '':
-                    if line[0] == '!':
-                        msg = self.decode(line, idx)
-                        time = get_clock(idx, data)
-                        msg['timestamp'] = time
-                        df = pd.DataFrame(msg, index=[idx])
-                        DataFrame = DataFrame.append(df)
+                if line[0] == '!':
+                    msg = self.decode(line, idx)
+                    time = get_clock(idx)
+                    msg['timestamp'] = time
+                    df = pd.DataFrame(msg, index=[idx])
+                    DataFrame = DataFrame.append(df)
 
             except:
                 continue
