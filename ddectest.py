@@ -1,6 +1,9 @@
 from pyais import decode_msg
 import pandas as pd
 import pynmea2
+# import geopandas as gpd
+# from shapely.geometry import Point, Polygon
+# import folium 
 
 class NMEA_decoder:
     def __init__(self, NMEA_log_path: str) -> None:
@@ -9,6 +12,12 @@ class NMEA_decoder:
         with open (self.file, "r", encoding="utf-8") as myfile:
             tmp = myfile.read().splitlines()
             self.data = [line for line in tmp if line]
+
+        self.GPS = self.getGPS()
+        
+
+    # def to_map(self):    
+
 
     def show_data(self):
         return self.data                 
@@ -36,6 +45,8 @@ class NMEA_decoder:
                 pass
 
         df = pd.DataFrame(row_list, columns=list(row.keys()))
+        df.drop_duplicates(inplace=True)
+        df.reset_index(inplace=True, drop=True)
         return df
 
 
@@ -107,6 +118,11 @@ class NMEA_decoder:
         # DataFrame = DataFrame[cols]
         # DataFrame.reset_index(drop=True, inplace=True)
         return DataFrame
+
+
+
+
+
 
 
 if __name__ == "__main__":
