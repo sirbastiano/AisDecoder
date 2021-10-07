@@ -1,6 +1,9 @@
 from pyais import decode_msg
 import pandas as pd
 import pynmea2
+# import geopandas as gpd
+# from shapely.geometry import Point, Polygon
+# import folium 
 
 class NMEA_decoder:
     def __init__(self, NMEA_log_path: str) -> None:
@@ -10,28 +13,44 @@ class NMEA_decoder:
             tmp = myfile.read().splitlines()
             self.data = [line for line in tmp if line]
 
+    # def to_map(self):    
+
+
     def show_data(self):
         return self.data                 
-    # def clock(self, line, idx: int):
-        
-    #     if self.data[idx+2][0] != '$':        # MULTI-LINE
-    #         try:
-    #             msg = pynmea2.parse(line, data[idx+2])
-    #             time = msg.timestamp.isoformat()
-    #             return time
-    #         except pynmea2.ParseError as e:
-    #             print(e)
-    #     else:
-    #         try:
-    #             msg = pynmea2.parse(line)
-    #             time = msg.timestamp.isoformat()
-    #             return time
-    #         except pynmea2.ParseError as e:
-    #             print(e)
+   
+
+    def getGPS(self):
+        GPS_stream = [row for row in self.data if row[0]=='$']
+
+        row_list = []
+        for line in GPS_stream:
+            msg = pynmea2.parse(line)
+            try:
+                assert(msg.is_valid)
+                assert(msg.longitude)
+                assert(msg.latitude)
+                assert(msg.timestamp)
+
+                time = msg.timestamp.isoformat()
+                lat = msg.latitude
+                lon = msg.longitude
+
+                row = {'timestamp':time, 'latitude':lat, 'longitude':lon}
+                row_list.append(row)
+            except:
+                pass
+
+        df = pd.DataFrame(row_list, columns=list(row.keys()))
+        df.drop_duplicates(inplace=True)
+        df.reset_index(inplace=True, drop=True)
+        return df
+
+
 
     def decode(self, line: str, idx: int):
 
-        if self.data[idx+1][0] == '!':        # MULTI-LINE
+        if self.data[idx][:10] == '!AIVDM,2,1':        # MULTI-LINE
             try:
                 msg = decode_msg(line, self.data[idx+1])
                 return msg
@@ -46,7 +65,8 @@ class NMEA_decoder:
 
     
     def to_df(self):
-        DataFrame = pd.DataFrame()
+        row_list = []
+
         
 
         def get_clock(idx):
@@ -63,27 +83,43 @@ class NMEA_decoder:
                     continue
             
 
-
+        # main:
         for idx, line in enumerate(self.data):
             try:
                 if line[0] == '!':
                     msg = self.decode(line, idx)
                     time = get_clock(idx)
                     msg['timestamp'] = time
-                    df = pd.DataFrame(msg, index=[idx])
-                    DataFrame = DataFrame.append(df)
+                    row_list.append(msg)
 
             except:
                 continue
-            
         
-        cols = DataFrame.columns.tolist()
-        cols.remove('timestamp')
-        cols = ['timestamp'] + cols
+        cols = ['timestamp', 'type', 'repeat', 'mmsi', 'status', 'turn', 'speed', 'accuracy',
+        'lon', 'lat', 'course', 'heading', 'second', 'maneuver', 'raim', 'radio', 'ais_version', 'imo',
+        'callsign', 'shipname', 'shiptype', 'to_bow', 'to_stern', 'to_port', 'to_starboard',
+        'epfd', 'month', 'day', 'hour', 'minute', 'draught', 'destination', 'dte', 'dac',
+        'fid', 'data', 'offset1', 'number1', 'timeout1', 'increment1', 'offset2', 'number2',
+        'timeout2', 'increment2', 'offset3', 'number3', 'timeout3', 'increment3', 'offset4',
+        'number4', 'timeout4', 'increment4', 'year', 'aid_type', 'name', 'off_position',
+        'regional', 'virtual_aid', 'assigned', 'name_extension', 'cs', 'display',
+        'dsc', 'band', 'msg22', 'partno', 'vendorid', 'model', 'serial', 'mothership_mmsi', 'seqno', 'dest_mmsi', 'retransmit']
 
-        DataFrame = DataFrame[cols]
-        DataFrame.reset_index(drop=True, inplace=True)
+
+        DataFrame = pd.DataFrame(row_list, columns=cols)    
+        
+        # cols = DataFrame.columns.tolist()
+        # cols.remove('timestamp')
+        # cols = ['timestamp'] + cols
+
+        # DataFrame = DataFrame[cols]
+        # DataFrame.reset_index(drop=True, inplace=True)
         return DataFrame
+
+
+
+
+
 
 
 if __name__ == "__main__":
