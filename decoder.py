@@ -1,3 +1,4 @@
+from numpy import append
 from pyais import decode_msg
 import pandas as pd
 import pynmea2
@@ -6,8 +7,19 @@ import pynmea2
 # import folium 
 
 class NMEA_decoder:
+    """
+    Class for decoding NMEA messages from XB-6000 transponder AIS. This implementation
+    has been developed in the framework of the ARGO ("A wake Revalation system for GO-fast vessels") project.
+    
+    All credits goes to the University of Naples Federico II, 
+    Department of Industrial Engineering.
+
+    mail: roberto.delprete@unina.it
+    """
     def __init__(self, NMEA_log_path: str) -> None:
         self.file = NMEA_log_path
+        self.undecoded_log = []
+
 
         with open (self.file, "r", encoding="utf-8") as myfile:
             tmp = myfile.read().splitlines()
@@ -20,7 +32,7 @@ class NMEA_decoder:
         return self.data                 
    
 
-    def getGPS(self):
+    def get_GPS(self):
         GPS_stream = [row for row in self.data if row[0]=='$']
 
         row_list = []
@@ -28,9 +40,6 @@ class NMEA_decoder:
             msg = pynmea2.parse(line)
             try:
                 assert(msg.is_valid)
-                assert(msg.longitude)
-                assert(msg.latitude)
-                assert(msg.timestamp)
 
                 time = msg.timestamp.isoformat()
                 lat = msg.latitude
@@ -38,8 +47,8 @@ class NMEA_decoder:
 
                 row = {'timestamp':time, 'latitude':lat, 'longitude':lon}
                 row_list.append(row)
-            except:
-                pass
+            except (KeyError,  AttributeError, AssertionError):
+                continue
 
         df = pd.DataFrame(row_list, columns=list(row.keys()))
         df.drop_duplicates(inplace=True)
@@ -49,6 +58,10 @@ class NMEA_decoder:
 
 
     def decode(self, line: str, idx: int):
+        """
+        | Decodes the NMEA message from an input string. The function also checks for multi-line messages.
+        """
+
 
         if self.data[idx][:10] == '!AIVDM,2,1':        # MULTI-LINE
             try:
@@ -56,18 +69,22 @@ class NMEA_decoder:
                 return msg
             except:
                 pass
-        else:
+
+        # TBD Add excpetion for handling second part of the message: ADDED!
+        elif self.data[idx][:10] == '!AIVDM,2,2':
+            pass
+
+        else:                                          # SINGLE-LINE
             try:
                 msg = decode_msg(line)
                 return msg
             except:
+                self.undecoded_log.append(line)
                 pass
 
     
     def to_df(self):
         row_list = []
-
-        
 
         def get_clock(idx):
             for i in range(30):
