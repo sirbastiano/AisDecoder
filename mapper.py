@@ -14,7 +14,7 @@ def add_my_legend(folium_map):
         <ul class='legend-labels'>
           <i><img src="https://i.ibb.co/YjBZx84/Argo.png" width="20"/> ARGO AIS Receiver </i>
           <i><img src="https://i.ibb.co/8KX0zLx/loc.png" width="15"/> Ship with COG </i>
-          <i><img src="https://i.ibb.co/5sXcLbr/nave.png" width="15"/> Ship (only location)</i>
+          <i><img src="https://i.ibb.co/5sXcLbr/nave.png" width="15"/> Other </i>
         </ul>
       </div>
       </div>
