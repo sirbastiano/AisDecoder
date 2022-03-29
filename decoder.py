@@ -134,12 +134,17 @@ class NMEA_decoder:
         return DataFrame
 
 
-def decodeMSG(inputFile: str, outputFolder: str):
+def decodeMSG(inputFile: str, outputFolder: str, Timeframe: list):
     """
     Funzione che esegue il parsing del messaggio AIS
     inputFile: file di Testo.txt contentente messaggio AIS
     outputFolder: cartella di output
+    Timeframe: tempo inizio, tempo fine --> ['16:59:24','16:59:44']
     """
+
+    style = 'symbol:pin; fill:#0000ff; fill-opacity:0.7; stroke:#ffffff; stroke-opacity:1.0; stroke-width:0.5'
+    text = None
+    dateTime = None
 
     parser = NMEA_decoder(NMEA_log_path=inputFile)
     GPS = parser.get_GPS()
@@ -147,13 +152,11 @@ def decodeMSG(inputFile: str, outputFolder: str):
     ais.dropna(axis=0,subset=['lon','lat'], inplace=True)
     ais.reset_index(inplace=True, drop=True)
 
-    ais = ais[ (ais['timestamp']>'16:57:10') & (ais['timestamp']<'16:59:50')]
-    # ais = ais.drop_duplicates(subset='mmsi')
+    ais = ais[ (ais['timestamp']>Timeframe[0]) & (ais['timestamp']<Timeframe[1])]
     ais.dropna(axis=0,subset=['lon','lat'], inplace=True)
     ais.reset_index(inplace=True, drop=True)
 
     SHP = gpd.GeoDataFrame(columns = ['style_css', 'label', 'text', 'dateTime', 'geometry'])
-    # ais = ais[ (ais['timestamp']>'16:44:59') & (ais['timestamp']<'16:59:24')]
     ais.reset_index(inplace=True, drop=True)
 
     output_path = outputFolder
