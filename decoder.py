@@ -134,7 +134,39 @@ class NMEA_decoder:
         return DataFrame
 
 
+def decodeMSG(inputFile: str, outputFolder: str):
+    """
+    Funzione che esegue il parsing del messaggio AIS
+    inputFile: file di Testo.txt contentente messaggio AIS
+    outputFolder: cartella di output
+    """
 
+    parser = NMEA_decoder(NMEA_log_path=inputFile)
+    GPS = parser.get_GPS()
+    ais = parser.to_df()
+    ais.dropna(axis=0,subset=['lon','lat'], inplace=True)
+    ais.reset_index(inplace=True, drop=True)
+
+    ais = ais[ (ais['timestamp']>'16:57:10') & (ais['timestamp']<'16:59:50')]
+    # ais = ais.drop_duplicates(subset='mmsi')
+    ais.dropna(axis=0,subset=['lon','lat'], inplace=True)
+    ais.reset_index(inplace=True, drop=True)
+
+    SHP = gpd.GeoDataFrame(columns = ['style_css', 'label', 'text', 'dateTime', 'geometry'])
+    # ais = ais[ (ais['timestamp']>'16:44:59') & (ais['timestamp']<'16:59:24')]
+    ais.reset_index(inplace=True, drop=True)
+
+    output_path = outputFolder
+
+    for i in range(len(ais)):
+        label = ais['mmsi'][i]
+        # lat, lon = ais['latitude'][i], ais['longitude'][i]
+        lat, lon = float(ais['lat'][i]), float(ais['lon'][i])
+        coordinates = [(lon, lat)]
+        geometry = Point(coordinates)
+        new_row = {'style_css':style, 'label':label, 'text':text, 'dateTime':dateTime, 'geometry':geometry}
+        SHP = SHP.append(new_row, ignore_index=True)
+    SHP.to_file(output_path+'\\'+'navi.shp')
 
 
 
