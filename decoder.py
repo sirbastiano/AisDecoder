@@ -2,8 +2,8 @@ from numpy import append
 from pyais import decode_msg
 import pandas as pd
 import pynmea2
-# import geopandas as gpd
-# from shapely.geometry import Point, Polygon
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
 # import folium 
 
 class NMEA_decoder:
